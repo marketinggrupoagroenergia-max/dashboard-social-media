@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Social Media</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f4f0; --surface: #ffffff; --surface-2: #f9f8f5;
+    --border: rgba(11,11,11,0.10); --border-strong: rgba(11,11,11,0.18);
+    --text: #0b0b0b; --text-sec: #52514e; --text-muted: #898781;
+    --accent: #2a78d6; --accent-bg: #e6f1fb; --accent-text: #185fa5;
+    --fb: #1877f2; --fb-bg: #e7f0fe; --fb-border: #a8c4f8;
+    --ig: #c13584; --ig-bg: #fce8f5; --ig-border: #e5a8d6;
+    --success: #1baf7a; --danger: #e34948; --radius: 8px;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 2rem 1rem; }
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px; }
+  .header h1 { font-size: 20px; font-weight: 500; }
+  .period-badge { font-size: 12px; color: var(--accent-text); background: var(--accent-bg); padding: 4px 14px; border-radius: var(--radius); border: 0.5px solid #b5d4f4; }
+  .info-box { background: var(--accent-bg); border: 0.5px solid #b5d4f4; border-radius: var(--radius); padding: 12px 16px; font-size: 13px; color: var(--accent-text); margin-bottom: 1.5rem; }
+
+  .account-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+  .account-tab { padding: 8px 20px; border-radius: var(--radius) var(--radius) 0 0; border: 0.5px solid var(--border-strong); border-bottom: none; font-size: 14px; cursor: pointer; color: var(--text-sec); background: var(--surface-2); font-family: inherit; transition: all 0.12s; }
+  .account-tab:hover { background: #eee; }
+  .account-tab.active { background: var(--surface); color: var(--text); font-weight: 500; }
+  .account-panel { display: none; background: var(--surface); border: 0.5px solid var(--border-strong); border-radius: 0 var(--radius) var(--radius) var(--radius); padding: 1.5rem; margin-bottom: 1.5rem; }
+  .account-panel.active { display: block; }
+
+  .net-tabs { display: flex; gap: 8px; margin-bottom: 1.25rem; }
+  .net-tab { display: flex; align-items: center; gap: 7px; padding: 7px 18px; border-radius: var(--radius); border: 0.5px solid var(--border-strong); font-size: 13px; cursor: pointer; color: var(--text-sec); background: var(--surface-2); font-family: inherit; font-weight: 500; transition: all 0.12s; }
+  .net-tab .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .net-tab.fb-active { background: var(--fb-bg); color: var(--fb); border-color: var(--fb-border); }
+  .net-tab.ig-active { background: var(--ig-bg); color: var(--ig); border-color: var(--ig-border); }
+  .net-panel { display: none; }
+  .net-panel.active { display: block; }
+
+  .months-nav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .month-btn { padding: 5px 11px; border-radius: var(--radius); border: 0.5px solid var(--border-strong); font-size: 12px; cursor: pointer; color: var(--text-sec); background: var(--surface); font-family: inherit; transition: all 0.12s; }
+  .month-btn:hover { background: var(--surface-2); }
+  .month-btn.active { border-color: var(--accent); color: var(--accent-text); background: var(--accent-bg); }
+
+  .metric-block { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; }
+  .metric-block-header { display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; }
+  .metric-block-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+  .metric-block-badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+  .badge-fb { background: var(--fb-bg); color: var(--fb); }
+  .badge-ig { background: var(--ig-bg); color: var(--ig); }
+  .badge-auto { background: #f0fdf4; color: #166534; border: 0.5px solid #bbf7d0; }
+
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 1rem; }
+  .kpi { border-radius: var(--radius); padding: 0.9rem 1rem; border: 0.5px solid var(--border); background: var(--surface); }
+  .kpi.sub { background: #fafaf8; border-style: dashed; }
+  .kpi.auto { background: #f0fdf4; border-color: #bbf7d0; }
+  .kpi-label { font-size: 11px; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .kpi-value { font-size: 20px; font-weight: 500; color: var(--text); }
+  .kpi-delta { font-size: 11px; margin-top: 3px; }
+  .kpi-note { font-size: 10px; color: var(--text-muted); margin-top: 3px; }
+  .pos { color: var(--success); } .neg { color: var(--danger); } .neu { color: var(--text-muted); }
+
+  /* Benchmark pill */
+  .bench { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 20px; margin-top: 4px; }
+  .bench-good { background: #f0fdf4; color: #166534; }
+  .bench-ok   { background: #fefce8; color: #854d0e; }
+  .bench-low  { background: #fef2f2; color: #991b1b; }
+
+  .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+  .input-group { display: flex; flex-direction: column; gap: 5px; }
+  .input-group label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .input-group input { padding: 7px 10px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); font-size: 14px; font-family: inherit; color: var(--text); background: var(--surface); outline: none; transition: border-color 0.12s; }
+  .input-group input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(42,120,214,0.12); }
+
+  .chart-wrap { position: relative; width: 100%; margin-top: 1rem; }
+  .divider { height: 0.5px; background: var(--border); margin: 1rem 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 12px; color: var(--text-sec); }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+  .footer { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 2rem; padding-top: 1rem; border-top: 0.5px solid var(--border); }
+  .auto-note { font-size: 11px; color: #166534; background: #f0fdf4; border: 0.5px solid #bbf7d0; border-radius: var(--radius); padding: 6px 10px; margin-bottom: 10px; display: inline-block; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>📊 Dashboard Social Media</h1>
+    <span class="period-badge" id="period-label">—</span>
+    <button class="btn-pdf" onclick="descargarPDF()">📄 Descargar PDF</button>
+    <span id="sync-indicator" style="font-size:11px;color:#1baf7a;display:none;">✓ Guardado en la nube</span>
+  </div>
+  <div class="info-box">
+    Ingresá los datos de cada cuenta y red social mes a mes. La tasa de engagement se calcula automáticamente. Los datos se guardan en el navegador.
+  </div>
+  <div class="account-tabs" id="account-tabs"></div>
+  <div id="account-panels"></div>
+  <div class="footer">Dashboard Social Media &mdash; Actualización mensual manual</div>
+</div>
+
+<script>
+const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const ACCOUNTS = ['Havanna La Pampa','Grupo Agroenergía','Dynamis'];
+const STORAGE_KEY = 'sm_dashboard_v6';
+const SUPABASE_URL = 'https://nprpvntgudhveoepmdsc.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_-UlgeXbGX08SQvW1QGTxMQ_pf5c9ok1';
+
+// ── SUPABASE API ──────────────────────────────────────────────────
+async function sbFetch(method, path, body=null) {
+  const opts = {
+    method,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': method==='POST' ? 'resolution=merge-duplicates,return=representation' : 'return=representation'
+    }
+  };
+  if(body) opts.body = JSON.stringify(body);
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, opts);
+  if(!res.ok) { const t=await res.text(); console.error('Supabase error:', t); return null; }
+  return res.json().catch(()=>null);
+}
+
+async function loadFromSupabase() {
+  const rows = await sbFetch('GET', 'dashboard_metricas?select=*');
+  if(!rows || rows.length===0) return null;
+  const s = ACCOUNTS.map(()=>({
+    facebook:{months:emptyMonths(FB_KEYS)},
+    instagram:{months:emptyMonths(IG_KEYS)},
+    pauta:{months:emptyPautaMonths()}
+  }));
+  rows.forEach(row => {
+    const accIdx = ACCOUNTS.indexOf(row.cuenta);
+    if(accIdx === -1) return;
+    const m = row.mes - 1;
+    const net = row.red;
+    if(net === 'pauta') {
+      const pm = s[accIdx].pauta.months[m];
+      if(row.pauta_plataforma) pm.items[0].plataforma = row.pauta_plataforma;
+      if(row.pauta_objetivo) pm.items[0].objetivo = row.pauta_objetivo;
+      if(row.pauta_contenido) pm.items[0].contenido = row.pauta_contenido;
+      if(row.pauta_presupuesto) pm.items[0].presupuesto = row.pauta_presupuesto;
+      if(row.pauta_fecha_inicio) pm.items[0].fecha_inicio = row.pauta_fecha_inicio;
+      if(row.pauta_fecha_fin) pm.items[0].fecha_fin = row.pauta_fecha_fin;
+      if(row.pauta_alcance_pago) pm.items[0].alcance_pago = row.pauta_alcance_pago;
+      if(row.pauta_clics) pm.items[0].clics = row.pauta_clics;
+      if(row.pauta_conversiones) pm.items[0].conversiones = row.pauta_conversiones;
+      if(row.pauta_presupuesto) pm.count = 1;
+    } else if(net === 'facebook' || net === 'instagram') {
+      const mo = s[accIdx][net].months[m];
+      ['viz_total','alcance','interacciones','posts','viz_seg_pct','viz_noseg_pct',
+       'seg_total','seg_nuevos','seg_abandonos','mensajes','seg_netos'].forEach(k => {
+        if(row[k] !== null && row[k] !== undefined) mo[k] = row[k];
+      });
+    }
+  });
+  return s;
+}
+
+async function saveToSupabase(accIdx, net, month) {
+  const cuenta = ACCOUNTS[accIdx];
+  const mes = month + 1;
+  const anio = new Date().getFullYear();
+  let body = { cuenta, red: net, mes, anio };
+
+  if(net === 'pauta') {
+    const pm = state[accIdx].pauta.months[month];
+    const p = pm.items[0];
+    body = { ...body,
+      pauta_plataforma: p.plataforma||null, pauta_objetivo: p.objetivo||null,
+      pauta_contenido: p.contenido||null,
+      pauta_presupuesto: p.presupuesto?Number(p.presupuesto):null,
+      pauta_fecha_inicio: p.fecha_inicio||null, pauta_fecha_fin: p.fecha_fin||null,
+      pauta_alcance_pago: p.alcance_pago?Number(p.alcance_pago):null,
+      pauta_clics: p.clics?Number(p.clics):null,
+      pauta_conversiones: p.conversiones?Number(p.conversiones):null
+    };
+  } else {
+    const mo = state[accIdx][net].months[month];
+    body = { ...body,
+      viz_total: mo.viz_total?Number(mo.viz_total):null,
+      alcance: mo.alcance?Number(mo.alcance):null,
+      interacciones: mo.int_total?Number(mo.int_total):null,
+      posts: mo.posts?Number(mo.posts):null,
+      viz_seg_pct: mo.viz_seg_pct?Number(mo.viz_seg_pct):null,
+      viz_noseg_pct: mo.viz_noseg_pct?Number(mo.viz_noseg_pct):null,
+      seg_total: mo.seg_total?Number(mo.seg_total):null,
+      seg_nuevos: mo.seg_nuevos?Number(mo.seg_nuevos):null,
+      seg_abandonos: mo.seg_abandonos?Number(mo.seg_abandonos):null,
+      mensajes: mo.mensajes?Number(mo.mensajes):null,
+      seg_netos: mo.seg_netos?Number(mo.seg_netos):null
+    };
+  }
+  await sbFetch('POST', 'dashboard_metricas?on_conflict=cuenta,red,mes,anio', [body]);
+}
+
+
+const PALETTE = { fb:'#1877f2', ig:'#c13584', teal:'#1baf7a', amber:'#eda100', red:'#e34948', purple:'#7c3aed' };
+
+const IG_KEYS = ['viz_total','viz_seg_pct','viz_noseg_pct','alcance','int_total','seg_total','seg_nuevos','seg_abandonos','posts'];
+const FB_KEYS = ['viz_total','mensajes','int_total','seg_netos','alcance','posts'];
+const PAUTA_SINGLE = ['plataforma','objetivo','contenido','presupuesto','fecha_inicio','fecha_fin','alcance_pago','clics','conversiones'];
+const OBJETIVOS = ['Reconocimiento / Alcance','Tráfico','Interacción','Mensajes','Leads','Ventas / Conversión'];
+const MAX_PAUTAS = 3;
+
+let currentAccount = 0;
+let currentNet = { 0:'facebook', 1:'facebook', 2:'facebook' };
+let currentMonth = new Date().getMonth();
+
+function emptyMonths(keys) {
+  return Array(12).fill(null).map(() => Object.fromEntries(keys.map(k=>[k,''])));
+}
+function emptyPauta() {
+  return Object.fromEntries(PAUTA_SINGLE.map(k=>[k,'']));
+}
+function emptyPautaMonths() {
+  // Cada mes: { count: 1, items: [{...},{...},{...}] }
+  return Array(12).fill(null).map(() => ({ count: 1, items: [emptyPauta(), emptyPauta(), emptyPauta()] }));
+}
+function ensurePautaState(accIdx) {
+  if (!state[accIdx].pauta) state[accIdx].pauta = { months: emptyPautaMonths() };
+  state[accIdx].pauta.months.forEach(mo => {
+    if (!mo.items) { mo.items = [emptyPauta(), emptyPauta(), emptyPauta()]; mo.count = mo.count || 1; }
+    while (mo.items.length < MAX_PAUTAS) mo.items.push(emptyPauta());
+  });
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) { const p=JSON.parse(raw); if(p.length===ACCOUNTS.length && p[0].facebook) return p; }
+  } catch(e) {}
+  return ACCOUNTS.map(()=>({ facebook:{months:emptyMonths(FB_KEYS)}, instagram:{months:emptyMonths(IG_KEYS)}, pauta:{months:emptyPautaMonths()} }));
+}
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+function saveStateAndSync(accIdx, net, month) {
+  saveState();
+  saveToSupabase(accIdx, net, month).then(()=>{
+    const ind=document.getElementById('sync-indicator');
+    if(ind){ind.style.display='inline';setTimeout(()=>ind.style.display='none',2000);}
+  }).catch(e => console.warn('Sync error:', e));
+}
+let state = loadState();
+
+function fmt(n) {
+  const num=Number(n);
+  if((!n&&n!==0)||isNaN(num)||num===0) return '—';
+  if(num>=1000000) return (num/1000000).toFixed(1)+'M';
+  if(num>=1000) return (num/1000).toFixed(1)+'K';
+  return Math.round(num).toLocaleString('es-AR');
+}
+function pct(part, total) {
+  if(!part||!total||isNaN(Number(part))||isNaN(Number(total))||Number(total)===0) return null;
+  return ((Number(part)/Number(total))*100).toFixed(1);
+}
+function engRate(int, alcance) {
+  if(!int||!alcance||isNaN(Number(int))||isNaN(Number(alcance))||Number(alcance)===0) return null;
+  return ((Number(int)/Number(alcance))*100).toFixed(2);
+}
+function delta(c,p) {
+  if(!c||!p||isNaN(Number(c))||isNaN(Number(p))||Number(p)===0) return null;
+  return ((Number(c)-Number(p))/Number(p)*100).toFixed(1);
+}
+function dHtml(d) {
+  if(d===null) return '<div class="kpi-delta neu">Sin datos previos</div>';
+  const n=Number(d);
+  return `<div class="kpi-delta ${n>=0?'pos':'neg'}">${n>=0?'▲':'▼'} ${Math.abs(d)}% vs mes ant.</div>`;
+}
+function benchIG(er) {
+  if(er===null) return '';
+  const n=Number(er);
+  if(n>=3) return '<span class="bench bench-good">✓ Buen engagement (≥3%)</span>';
+  if(n>=1) return '<span class="bench bench-ok">⚡ Engagement moderado</span>';
+  return '<span class="bench bench-low">↓ Engagement bajo (&lt;1%)</span>';
+}
+function benchFB(er) {
+  if(er===null) return '';
+  const n=Number(er);
+  if(n>=1) return '<span class="bench bench-good">✓ Buen engagement (≥1%)</span>';
+  if(n>=0.5) return '<span class="bench bench-ok">⚡ Engagement moderado</span>';
+  return '<span class="bench bench-low">↓ Engagement bajo (&lt;0.5%)</span>';
+}
+function kpi(label, val, d, sub=false, extra='') {
+  return `<div class="kpi${sub?' sub':''}"><div class="kpi-label">${label}</div><div class="kpi-value">${val}</div>${dHtml(d)}${extra}</div>`;
+}
+function kpiAuto(label, val, extra='') {
+  return `<div class="kpi auto"><div class="kpi-label">${label}</div><div class="kpi-value">${val!==null?val+'%':'—'}</div>${extra}<div class="kpi-note">Calculado automáticamente</div></div>`;
+}
+function inp(accIdx, net, m, key, label, placeholder) {
+  const val=state[accIdx][net].months[m][key]||'';
+  return `<div class="input-group"><label>${label}</label><input type="number" placeholder="${placeholder}" value="${val}" onchange="saveField(${accIdx},'${net}',${m},'${key}',this.value)"></div>`;
+}
+function destroyChart(id) { const c=Chart.getChart(id); if(c) c.destroy(); }
+function baseOpts(extra={}) {
+  return { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+    scales:{
+      x:{ticks:{color:'#898781',font:{size:11},autoSkip:false,maxRotation:0},grid:{display:false},border:{display:false}},
+      y:{ticks:{color:'#898781',font:{size:11}},grid:{color:'rgba(136,135,128,0.12)'},border:{display:false}}
+    }, ...extra };
+}
+function chartLine(id, data, color) {
+  new Chart(document.getElementById(id),{type:'line',
+    data:{labels:MS,datasets:[{data,borderColor:color,backgroundColor:color+'18',borderWidth:2,pointRadius:4,pointBackgroundColor:color,tension:0.35,spanGaps:false}]},
+    options:baseOpts()});
+}
+function chartBar(id, datasets) {
+  new Chart(document.getElementById(id),{type:'bar',data:{labels:MS,datasets},options:baseOpts()});
+}
+function chartBarColored(id, data, posColor, negColor) {
+  const colors = data.map(v=>v===null?'transparent':(Number(v)>=0?posColor:negColor));
+  new Chart(document.getElementById(id),{type:'bar',
+    data:{labels:MS,datasets:[{data,backgroundColor:colors,borderRadius:4}]},
+    options:baseOpts()});
+}
+
+function renderIG(accIdx) {
+  const net='instagram', color=PALETTE.ig;
+  const mo=state[accIdx][net].months;
+  const m=currentMonth, c=mo[m], p=m>0?mo[m-1]:null;
+
+  const er = engRate(c.int_total, c.alcance);
+  const segPct = c.viz_seg_pct ? Number(c.viz_seg_pct) : null;
+  const nosegPct = c.viz_noseg_pct ? Number(c.viz_noseg_pct) : null;
+
+  const IDS = {viz:`ig-viz-${accIdx}`,vizpct:`ig-vizpct-${accIdx}`,alc:`ig-alc-${accIdx}`,int:`ig-int-${accIdx}`,cre:`ig-cre-${accIdx}`,eng:`ig-eng-${accIdx}`};
+  Object.values(IDS).forEach(destroyChart);
+
+  document.getElementById('netpanel-'+accIdx+'-instagram').innerHTML = `
+    <div class="months-nav">${MS.map((mn,i)=>`<button class="month-btn${i===m?' active':''}" onclick="selectMonth(${i})">${mn}</button>`).join('')}</div>
+
+    <!-- TASA DE ENGAGEMENT (destacada arriba) -->
+    <div class="metric-block">
+      <div class="metric-block-header">
+        <div class="metric-block-title">Tasa de Engagement</div>
+        <span class="metric-block-badge badge-auto">🤖 Automático</span>
+      </div>
+      <span class="auto-note">Se calcula automáticamente: Interacciones ÷ Cuentas alcanzadas × 100. Benchmark Instagram: bueno ≥ 3%</span>
+      <div class="kpi-row">
+        ${kpiAuto('Tasa de engagement', er, benchIG(er))}
+        ${kpi('Posts publicados', fmt(c.posts), delta(c.posts, p?.posts))}
+      </div>
+      <div class="divider"></div>
+      <div class="input-grid">${inp(accIdx,net,m,'posts','Posts publicados','ej: 18')}</div>
+      <div class="chart-wrap" style="height:160px;"><canvas id="${IDS.eng}"></canvas></div>
+    </div>
+
+    <!-- VISUALIZACIONES -->
+    <div class="metric-block">
+      <div class="metric-block-header">
+        <div class="metric-block-title">Visualizaciones</div>
+        <span class="metric-block-badge badge-ig">Instagram</span>
+      </div>
+      <div class="kpi-row">
+        ${kpi('Total', fmt(c.viz_total), delta(c.viz_total, p?.viz_total))}
+        ${kpi('Seguidores %', segPct!==null?segPct+'%':'—', delta(c.viz_seg_pct, p?.viz_seg_pct), true)}
+        ${kpi('No seguidores %', nosegPct!==null?nosegPct+'%':'—', delta(c.viz_noseg_pct, p?.viz_noseg_pct), true)}
+      </div>
+      <div class="divider"></div>
+      <div class="input-grid">
+        ${inp(accIdx,net,m,'viz_total','Total visualizaciones','ej: 95000')}
+        ${inp(accIdx,net,m,'viz_seg_pct','% de seguidores','ej: 30')}
+        ${inp(accIdx,net,m,'viz_noseg_pct','% de no seguidores','ej: 70')}
+      </div>
+      <div class="chart-wrap" style="height:180px;"><canvas id="${IDS.viz}"></canvas></div>
+      <div style="margin-top:1rem;">
+        <div class="section-title" style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Distribución % — Seguidores vs No seguidores</div>
+        <div class="legend">
+          <span><span class="legend-dot" style="background:${color}90"></span>Seguidores %</span>
+          <span><span class="legend-dot" style="background:${color}40"></span>No seguidores %</span>
+        </div>
+        <div class="chart-wrap" style="height:160px;"><canvas id="${IDS.vizpct}"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ALCANCE -->
+    <div class="metric-block">
+      <div class="metric-block-header">
+        <div class="metric-block-title">Cuentas alcanzadas</div>
+        <span class="metric-block-badge badge-ig">Instagram</span>
+      </div>
+      <div class="kpi-row">${kpi('Cuentas alcanzadas', fmt(c.alcance), delta(c.alcance, p?.alcance))}</div>
+      <div class="divider"></div>
+      <div class="input-grid">${inp(accIdx,net,m,'alcance','Cuentas alcanzadas','ej: 28000')}</div>
+      <div class="chart-wrap" style="height:160px;"><canvas id="${IDS.alc}"></canvas></div>
+    </div>
+
+    <!-- INTERACCIONES -->
+    <div class="metric-block">
+      <div class="metric-block-header">
+        <div class="metric-block-title">Interacciones</div>
+        <span class="metric-block-badge badge-ig">Instagram</span>
+      </div>
+      <div class="kpi-row">${kpi('Total interacciones', fmt(c.int_total), delta(c.int_total, p?.int_total))}</div>
+      <div class="divider"></div>
+      <div class="input-grid">${inp(accIdx,net,m,'int_total','Total interacciones','ej: 3100')}</div>
+      <div class="chart-wrap" style="height:160px;"><canvas id="${IDS.int}"></canvas></div>
+    </div>
+
+    <!-- CRECIMIENTO -->
+    <div class="metric-block">
+      <div class="metric-block-header">
+        <div class="metric-block-title">Crecimiento de seguidores</div>
+        <span class="metric-block-badge badge-ig">Instagram</span>
+      </div>
+      <div class="kpi-row">
+        ${kpi('Total seguidores', fmt(c.seg_total), delta(c.seg_total, p?.seg_total))}
+        ${kpi('Nuevos', fmt(c.seg_nuevos), delta(c.seg_nuevos, p?.seg_nuevos), true)}
+        ${kpi('Abandonos', fmt(c.seg_abandonos), delta(c.seg_abandonos, p?.seg_abandonos), true)}
+      </div>
+      <div class="divider"></div>
+      <div class="input-grid">
+        ${inp(accIdx,net,m,'seg_total','Total seguidores','ej: 12500')}
+        ${inp(accIdx,net,m,'seg_nuevos','Nuevos seguidores','ej: 280')}
+        ${inp(accIdx,net,m,'seg_abandonos','Abandonos','ej: 45')}
+      </div>
+      <div class="legend">
+        <span><span class="legend-dot" style="background:${PALETTE.teal}"></span>Nuevos</span>
+        <span><span class="legend-dot" style="background:${PALETTE.red}"></span>Abandonos</span>
+      </div>
+      <div class="chart-wrap" style="height:180px;"><canvas id="${IDS.cre}"></canvas></div>
+    </div>
+  `;
+
+  setTimeout(()=>{
+    const erData = mo.map(x=>{ const e=engRate(x.int_total,x.alcance); return e?Number(e):null; });
+    chartLine(IDS.eng, erData, PALETTE.teal);
+    chartLine(IDS.viz, mo.map(x=>x.viz_total?Number(x.viz_total):null), color);
+    chartBar(IDS.vizpct, [
+      {label:'Seguidores %', data:mo.map(x=>x.viz_seg_pct?Number(x.viz_seg_pct):null), backgroundColor:color+'90', borderRadius:4},
+      {label:'No seguidores %', data:mo.map(x=>x.viz_noseg_pct?Number(x.viz_noseg_pct):null), backgroundColor:color+'40', borderRadius:4}
+    ]);
+    chartLine(IDS.alc, mo.map(x=>x.alcance?Number(x.alcance):null), color);
+    chartLine(IDS.int, mo.map(x=>x.int_total?Number(x.int_total):null), PALETTE.amber);
+    chartBar(IDS.cre, [
+      {label:'Nuevos', data:mo.map(x=>x.seg_nuevos?Number(x.seg_nuevos):null), backgroundColor:PALETTE.teal+'90', borderRadius:4},
+      {label:'Abandonos', data:mo.map(x=>x.seg_abandonos?Number(x.seg_abandonos):null), backgroundColor:PALETTE.red+'90', borderRadius:4}
+    ]);
+  },0);
+}
+
+function renderFB(accIdx) {
+  const net='facebook', color=PALETTE.fb;
+  const mo=state[accIdx][net].months;
+  const m=currentMonth, c=mo[m], p=m>0?mo[m-1]:null;
+  const er = engRate(c.int_total, c.alcance);
+
+  const IDS = {viz:`fb-viz-${accIdx}`,msg:`fb-msg-${accIdx}`,int:`fb-int-${accIdx}`,seg:`fb-seg-${accIdx}`,eng:`fb-eng-${accIdx}`};
+  Object.values(IDS).forEach(destroyChart);
+
+  document.getElementById('netpanel-'+accIdx+'-facebook').innerHTML = `
+    <div class="months-nav">${MS.map((mn,i)=>`<button class="month-btn${i===m?' active':''}" onclick="selectMonth(${i})">${mn}</button>`).join('')}</div>
+
+    <!-- TASA DE ENGAGEMENT -->
+    <div class="metric-block">
+      <div class="metric-block-header">
+        <div class="metric-block-title">Tasa de Engagement</div>
+        <span class="metric-block-badge badge-auto">🤖 Automático</span>
+      </div>
+      <span class="auto-note">Se calcula automáticamente: Interacciones ÷ Alcance × 100. Benchmark Facebook: bueno ≥ 1%</span>
+      <div class="kpi-row">
+        ${kpiAuto('Tasa de engagement', er, benchFB(er))}
+        ${kpi('Posts publicados', fmt(c.posts), delta(c.posts, p?.posts))}
+      </div>
+      <div class="divider"></div>
+      <div class="input-grid">
+        ${inp(accIdx,net,m,'alcance','Alcance (para eng.)', 'ej: 45000')}
+        ${inp(accIdx,net,m,'posts','Posts publicados','ej: 12')}
+      </div>
+      <div class="chart-wrap" style="height:160px;"><canvas id="${IDS.eng}"></canvas></div>
+    </div>
+
+    <!-- VISUALIZACIONES -->
+    <div class="metric-block">
+      <div class="metric-block-header">
+        <div class="metric-block-title">Visualizaciones</div>
+        <span class="metric-block-badge badge-fb">Facebook</span>
+      </div>
+      <div class="kpi-row">${kpi('Total visualizaciones', fmt(c.viz_total), delta(c.viz_total, p?.viz_total))}</div>
+      <div class="divider"></div>
+      <div class="input-grid">${inp(accIdx,net,m,'viz_total','Total visualizaciones','ej: 80000')}</div>
+      <div class="chart-wrap" style="height:180px;"><canvas id="${IDS.viz}"></canvas></div>
+    </div>
+
+    <!-- CONVERSIÓN CON MENSAJES -->
+    <div class="metric-block">
+      <div class="metric-block-header">
+        <div class="metric-block-title">Conversión con mensajes</div>
+        <span class="metric-block-badge badge-fb">Facebook</span>
+      </div>
+      <div class="kpi-row">${kpi('Mensajes / conversiones', fmt(c.mensajes), delta(c.mensajes, p?.mensajes))}</div>
+      <div class="divider"></div>
+      <div class="input-grid">${inp(accIdx,net,m,'mensajes','Mensajes / conversiones','ej: 320')}</div>
+      <div class="chart-wrap" style="height:160px;"><canvas id="${IDS.msg}"></canvas></div>
+    </div>
+
+    <!-- INTERACCIONES -->
+    <div class="metric-block">
+      <div class="metric-block-header">
+        <div class="metric-block-title">Interacciones</div>
+        <span class="metric-block-badge badge-fb">Facebook</span>
+      </div>
+      <div class="kpi-row">${kpi('Total interacciones', fmt(c.int_total), delta(c.int_total, p?.int_total))}</div>
+      <div class="divider"></div>
+      <div class="input-grid">${inp(accIdx,net,m,'int_total','Total interacciones','ej: 2400')}</div>
+      <div class="chart-wrap" style="height:160px;"><canvas id="${IDS.int}"></canvas></div>
+    </div>
+
+    <!-- SEGUIDORES NETOS -->
+    <div class="metric-block">
+      <div class="metric-block-header">
+        <div class="metric-block-title">Seguidores netos</div>
+        <span class="metric-block-badge badge-fb">Facebook</span>
+      </div>
+      <div class="kpi-row">${kpi('Seguidores netos', fmt(c.seg_netos), delta(c.seg_netos, p?.seg_netos))}</div>
+      <div class="divider"></div>
+      <div class="input-grid">${inp(accIdx,net,m,'seg_netos','Seguidores netos','ej: 150')}</div>
+      <div class="chart-wrap" style="height:160px;"><canvas id="${IDS.seg}"></canvas></div>
+    </div>
+  `;
+
+  setTimeout(()=>{
+    const erData = mo.map(x=>{ const e=engRate(x.int_total,x.alcance); return e?Number(e):null; });
+    chartLine(IDS.eng, erData, PALETTE.teal);
+    chartLine(IDS.viz, mo.map(x=>x.viz_total?Number(x.viz_total):null), color);
+    chartLine(IDS.msg, mo.map(x=>x.mensajes?Number(x.mensajes):null), PALETTE.amber);
+    chartLine(IDS.int, mo.map(x=>x.int_total?Number(x.int_total):null), PALETTE.purple);
+    chartBarColored(IDS.seg, mo.map(x=>x.seg_netos?Number(x.seg_netos):null), PALETTE.teal+'90', PALETTE.red+'90');
+  },0);
+}
+
+function renderNetPanel(accIdx, net) {
+  if(net==='instagram') renderIG(accIdx); else renderFB(accIdx);
+}
+
+
+// ── PAUTA PUBLICITARIA ───────────────────────────────────────────
+function renderPauta(accIdx) {
+  ensurePautaState(accIdx);
+  const m = currentMonth;
+  const pautaMes = state[accIdx].pauta.months[m];
+  const mo = state[accIdx].pauta.months;
+  const count = pautaMes.count || 1;
+
+  // Resumen anual
+  const presAnual = mo.map(x => x.items ? x.items.reduce((a,p)=>a+(Number(p.presupuesto)||0),0) : 0);
+  const clicsAnual = mo.map(x => x.items ? x.items.reduce((a,p)=>a+(Number(p.clics)||0),0) : 0);
+  const alcAnual = mo.map(x => x.items ? x.items.reduce((a,p)=>a+(Number(p.alcance_pago)||0),0) : 0);
+  const totalInv = presAnual.reduce((a,v)=>a+v,0);
+  const totalClics = clicsAnual.reduce((a,v)=>a+v,0);
+  const totalConv = mo.reduce((a,x)=>a+(x.items?x.items.reduce((b,p)=>b+(Number(p.conversiones)||0),0):0),0);
+  const mesesConPauta = mo.filter(x=>x.items && x.items.some(p=>Number(p.presupuesto)>0)).length;
+
+  const id_pres = `pauta-pres-${accIdx}`;
+  const id_alc  = `pauta-alc-${accIdx}`;
+  const id_clic = `pauta-clic-${accIdx}`;
+  [id_pres, id_alc, id_clic].forEach(id => { const c=Chart.getChart(id); if(c) c.destroy(); });
+
+  function pautaCard(idx) {
+    const p = pautaMes.items[idx];
+    const cpcCalc = (p.presupuesto && p.clics && Number(p.clics)>0) ? '$'+(Number(p.presupuesto)/Number(p.clics)).toFixed(2) : '—';
+    const cpmCalc = (p.presupuesto && p.alcance_pago && Number(p.alcance_pago)>0) ? '$'+((Number(p.presupuesto)/Number(p.alcance_pago))*1000).toFixed(2) : '—';
+    const cpaCalc = (p.presupuesto && p.conversiones && Number(p.conversiones)>0) ? '$'+(Number(p.presupuesto)/Number(p.conversiones)).toFixed(2) : '—';
+    const ctrCalc = (p.clics && p.alcance_pago && Number(p.alcance_pago)>0) ? ((Number(p.clics)/Number(p.alcance_pago))*100).toFixed(2)+'%' : '—';
+    return `
+      <div style="background:#fffef0;border:0.5px solid #fde047;border-radius:12px;padding:1.25rem;margin-bottom:1rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+          <span style="font-size:13px;font-weight:600;color:#854d0e;">Pauta ${idx+1}</span>
+          ${idx>0?`<button onclick="removePauta(${accIdx},${m},${idx})" style="font-size:11px;color:var(--danger);background:none;border:0.5px solid var(--danger);border-radius:6px;padding:2px 10px;cursor:pointer;">✕ Quitar</button>`:''}
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:1rem;">
+          <div class="input-group"><label>Plataforma</label>
+            <select onchange="savePautaItem(${accIdx},${m},${idx},'plataforma',this.value)" style="padding:7px 10px;border:0.5px solid var(--border-strong);border-radius:var(--radius);font-size:14px;font-family:inherit;color:var(--text);background:var(--surface);outline:none;">
+              <option value="">Seleccionar...</option>
+              <option value="Facebook Ads" ${p.plataforma==='Facebook Ads'?'selected':''}>Facebook Ads</option>
+              <option value="Instagram Ads" ${p.plataforma==='Instagram Ads'?'selected':''}>Instagram Ads</option>
+              <option value="Ambas" ${p.plataforma==='Ambas'?'selected':''}>Ambas</option>
+            </select>
+          </div>
+          <div class="input-group"><label>Objetivo</label>
+            <select onchange="savePautaItem(${accIdx},${m},${idx},'objetivo',this.value)" style="padding:7px 10px;border:0.5px solid var(--border-strong);border-radius:var(--radius);font-size:14px;font-family:inherit;color:var(--text);background:var(--surface);outline:none;">
+              <option value="">Seleccionar...</option>
+              ${OBJETIVOS.map(o=>`<option value="${o}" ${p.objetivo===o?'selected':''}>${o}</option>`).join('')}
+            </select>
+          </div>
+          <div class="input-group"><label>Presupuesto ($)</label><input type="number" placeholder="ej: 15000" value="${p.presupuesto}" onchange="savePautaItem(${accIdx},${m},${idx},'presupuesto',this.value)"></div>
+          <div class="input-group"><label>Contenido pautado</label><input type="text" placeholder="ej: Post promo Navidad" value="${p.contenido}" onchange="savePautaItem(${accIdx},${m},${idx},'contenido',this.value)" style="padding:7px 10px;border:0.5px solid var(--border-strong);border-radius:var(--radius);font-size:14px;font-family:inherit;color:var(--text);background:var(--surface);outline:none;"></div>
+          <div class="input-group"><label>Fecha inicio</label><input type="date" value="${p.fecha_inicio}" onchange="savePautaItem(${accIdx},${m},${idx},'fecha_inicio',this.value)" style="padding:7px 10px;border:0.5px solid var(--border-strong);border-radius:var(--radius);font-size:14px;font-family:inherit;color:var(--text);background:var(--surface);outline:none;"></div>
+          <div class="input-group"><label>Fecha fin</label><input type="date" value="${p.fecha_fin}" onchange="savePautaItem(${accIdx},${m},${idx},'fecha_fin',this.value)" style="padding:7px 10px;border:0.5px solid var(--border-strong);border-radius:var(--radius);font-size:14px;font-family:inherit;color:var(--text);background:var(--surface);outline:none;"></div>
+          <div class="input-group"><label>Alcance pagado</label><input type="number" placeholder="ej: 28000" value="${p.alcance_pago}" onchange="savePautaItem(${accIdx},${m},${idx},'alcance_pago',this.value)"></div>
+          <div class="input-group"><label>Clics</label><input type="number" placeholder="ej: 540" value="${p.clics}" onchange="savePautaItem(${accIdx},${m},${idx},'clics',this.value)"></div>
+          <div class="input-group"><label>Conversiones</label><input type="number" placeholder="ej: 32" value="${p.conversiones}" onchange="savePautaItem(${accIdx},${m},${idx},'conversiones',this.value)"></div>
+        </div>
+        <div class="divider"></div>
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Indicadores</div>
+        <div class="kpi-row">
+          <div class="kpi auto"><div class="kpi-label">CPC</div><div class="kpi-value" style="font-size:16px">${cpcCalc}</div><div class="kpi-note">Costo por clic</div></div>
+          <div class="kpi auto"><div class="kpi-label">CPM</div><div class="kpi-value" style="font-size:16px">${cpmCalc}</div><div class="kpi-note">Costo por mil</div></div>
+          <div class="kpi auto"><div class="kpi-label">CPA</div><div class="kpi-value" style="font-size:16px">${cpaCalc}</div><div class="kpi-note">Costo por conv.</div></div>
+          <div class="kpi auto"><div class="kpi-label">CTR</div><div class="kpi-value" style="font-size:16px">${ctrCalc}</div><div class="kpi-note">Tasa de clic</div></div>
+        </div>
+      </div>`;
+  }
+
+  let cardsHtml = '';
+  for(let i=0; i<count; i++) cardsHtml += pautaCard(i);
+
+  document.getElementById('netpanel-'+accIdx+'-pauta').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px;">
+      <div style="font-size:14px;font-weight:500;">Pauta publicitaria — ${MONTHS[m]}</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        ${count < MAX_PAUTAS ? `<button onclick="addPauta(${accIdx},${m})" style="font-size:12px;background:#fef9c3;color:#854d0e;border:0.5px solid #fde047;border-radius:var(--radius);padding:5px 14px;cursor:pointer;font-family:inherit;">+ Agregar pauta</button>` : `<span style="font-size:12px;color:var(--text-muted)">Máximo 3 pautas por mes</span>`}
+        <span style="font-size:12px;color:var(--text-muted);background:var(--surface-2);border:0.5px solid var(--border);border-radius:var(--radius);padding:4px 12px;">${count} pauta${count>1?'s':''} este mes</span>
+      </div>
+    </div>
+
+    ${cardsHtml}
+
+    <!-- Resumen anual -->
+    <div class="metric-block">
+      <div class="metric-block-header">
+        <div class="metric-block-title">Inversión publicitaria anual</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div>
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Presupuesto total por mes ($)</div>
+          <div style="height:130px;position:relative"><canvas id="${id_pres}"></canvas></div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Alcance pagado acumulado</div>
+          <div style="height:130px;position:relative"><canvas id="${id_alc}"></canvas></div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Clics acumulados</div>
+          <div style="height:130px;position:relative"><canvas id="${id_clic}"></canvas></div>
+        </div>
+        <div style="background:var(--surface-2);border-radius:var(--radius);padding:1rem;border:0.5px solid var(--border);display:flex;flex-direction:column;justify-content:center;gap:8px;">
+          <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Resumen del año</div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text-muted)">Total invertido</span><strong>$${totalInv.toLocaleString('es-AR')}</strong></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text-muted)">Meses con pauta</span><strong>${mesesConPauta} / 12</strong></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text-muted)">Total clics</span><strong>${totalClics.toLocaleString('es-AR')}</strong></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text-muted)">Total conversiones</span><strong>${totalConv.toLocaleString('es-AR')}</strong></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const miniOpts = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ display:false } },
+    scales:{
+      x:{ ticks:{color:'#898781',font:{size:9},autoSkip:false,maxRotation:0}, grid:{display:false}, border:{display:false} },
+      y:{ ticks:{color:'#898781',font:{size:9}}, grid:{color:'rgba(136,135,128,0.10)'}, border:{display:false} }
+    }
+  };
+
+  setTimeout(()=>{
+    new Chart(document.getElementById(id_pres),{type:'bar',data:{labels:MS,datasets:[{data:presAnual,backgroundColor:presAnual.map(v=>v>0?'#facc1590':'#e2e8f050'),borderRadius:3}]},options:miniOpts});
+    new Chart(document.getElementById(id_alc),{type:'bar',data:{labels:MS,datasets:[{data:alcAnual,backgroundColor:'#1877f290',borderRadius:3}]},options:miniOpts});
+    new Chart(document.getElementById(id_clic),{type:'line',data:{labels:MS,datasets:[{data:clicsAnual.map(v=>v>0?v:null),borderColor:PALETTE.amber,backgroundColor:PALETTE.amber+'18',borderWidth:2,pointRadius:3,tension:0.35,spanGaps:false}]},options:miniOpts});
+  },0);
+}
+
+function addPauta(accIdx, month) {
+  ensurePautaState(accIdx);
+  const mo = state[accIdx].pauta.months[month];
+  if(mo.count < MAX_PAUTAS) mo.count++;
+  saveState();
+  renderPauta(accIdx);
+}
+function removePauta(accIdx, month, idx) {
+  ensurePautaState(accIdx);
+  const mo = state[accIdx].pauta.months[month];
+  mo.items[idx] = emptyPauta();
+  // Compactar: mover ítems vacíos al final
+  const filled = mo.items.filter((_,i)=>i<mo.count).sort((a,b)=> (Object.values(b).some(v=>v!=='')?1:0)-(Object.values(a).some(v=>v!=='')?1:0));
+  while(filled.length < MAX_PAUTAS) filled.push(emptyPauta());
+  mo.items = filled;
+  if(mo.count > 1) mo.count--;
+  saveState();
+  renderPauta(accIdx);
+}
+function savePautaItem(accIdx, month, idx, field, value) {
+  ensurePautaState(accIdx);
+  state[accIdx].pauta.months[month].items[idx][field] = value;
+  saveStateAndSync(accIdx, 'pauta', month);
+  renderPauta(accIdx);
+}
+
+// ── RESUMEN ANUAL ────────────────────────────────────────────────
+function destroyAnualCharts(accIdx) {
+  ['fb','ig'].forEach(net => {
+    ['viz','eng','int','seg','alc'].forEach(t => {
+      const c = Chart.getChart(`anual-${accIdx}-${net}-${t}`);
+      if(c) c.destroy();
+    });
+  });
+}
+
+function renderAnual(accIdx) {
+  destroyAnualCharts(accIdx);
+  const fbMo = state[accIdx].facebook.months;
+  const igMo = state[accIdx].instagram.months;
+
+  // Tabla helper
+  function tableRow(label, data, fmtFn) {
+    const cells = data.map((v,i) => {
+      const prev = i>0 ? data[i-1] : null;
+      const hasVal = v!==null && v!=='' && !isNaN(Number(v)) && Number(v)!==0;
+      const hasPrev = prev!==null && prev!=='' && !isNaN(Number(prev)) && Number(prev)!==0;
+      let arrow = '';
+      if(hasVal && hasPrev) {
+        const d = ((Number(v)-Number(prev))/Number(prev)*100);
+        arrow = d>=0 ? `<span style="color:#1baf7a;font-size:10px"> ▲${d.toFixed(0)}%</span>` : `<span style="color:#e34948;font-size:10px"> ▼${Math.abs(d).toFixed(0)}%</span>`;
+      }
+      return `<td style="text-align:right;white-space:nowrap">${hasVal?fmtFn(v):'—'}${arrow}</td>`;
+    }).join('');
+    return `<tr><td style="font-size:11px;color:var(--text-muted);white-space:nowrap;padding-right:8px">${label}</td>${cells}</tr>`;
+  }
+
+  const headerCells = MS.map(m=>`<th style="text-align:right;font-size:11px;font-weight:600;color:var(--text-muted);padding:4px 6px">${m}</th>`).join('');
+  const tableStyle = `width:100%;border-collapse:collapse;font-size:12px;`;
+  const tdStyle = `padding:6px 6px;border-bottom:0.5px solid var(--border);`;
+
+  // FB data arrays
+  const fbViz  = fbMo.map(x=>x.viz_total||null);
+  const fbMsg  = fbMo.map(x=>x.mensajes||null);
+  const fbInt  = fbMo.map(x=>x.int_total||null);
+  const fbSeg  = fbMo.map(x=>x.seg_netos||null);
+  const fbAlc  = fbMo.map(x=>x.alcance||null);
+  const fbEr   = fbMo.map(x=>{ const e=engRate(x.int_total,x.alcance); return e||null; });
+  const fbPost = fbMo.map(x=>x.posts||null);
+
+  // IG data arrays
+  const igViz  = igMo.map(x=>x.viz_total||null);
+  const igVsp  = igMo.map(x=>x.viz_seg_pct||null);
+  const igVnp  = igMo.map(x=>x.viz_noseg_pct||null);
+  const igAlc  = igMo.map(x=>x.alcance||null);
+  const igInt  = igMo.map(x=>x.int_total||null);
+  const igSegT = igMo.map(x=>x.seg_total||null);
+  const igNew  = igMo.map(x=>x.seg_nuevos||null);
+  const igLost = igMo.map(x=>x.seg_abandonos||null);
+  const igEr   = igMo.map(x=>{ const e=engRate(x.int_total,x.alcance); return e||null; });
+  const igPost = igMo.map(x=>x.posts||null);
+
+  document.getElementById('netpanel-'+accIdx+'-anual').innerHTML = `
+
+    <!-- ── FACEBOOK ── -->
+    <div class="metric-block">
+      <div class="metric-block-header">
+        <div class="metric-block-title">Resumen anual — Facebook</div>
+        <span class="metric-block-badge badge-fb">Facebook</span>
+      </div>
+
+      <div style="overflow-x:auto;margin-bottom:1rem;">
+        <table style="${tableStyle}">
+          <thead><tr><th style="text-align:left;font-size:11px;font-weight:600;color:var(--text-muted);padding:4px 6px">Métrica</th>${headerCells}</tr></thead>
+          <tbody style="${tdStyle}">
+            ${tableRow('Visualizaciones', fbViz, fmt)}
+            ${tableRow('Mensajes / Conv.', fbMsg, fmt)}
+            ${tableRow('Interacciones', fbInt, fmt)}
+            ${tableRow('Seg. netos', fbSeg, v=>v)}
+            ${tableRow('Tasa eng. %', fbEr, v=>v+'%')}
+            ${tableRow('Posts', fbPost, v=>v)}
+          </tbody>
+        </table>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;">
+        <div>
+          <div class="section-title" style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Visualizaciones</div>
+          <div style="height:140px;position:relative"><canvas id="anual-${accIdx}-fb-viz"></canvas></div>
+        </div>
+        <div>
+          <div class="section-title" style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Interacciones</div>
+          <div style="height:140px;position:relative"><canvas id="anual-${accIdx}-fb-int"></canvas></div>
+        </div>
+        <div>
+          <div class="section-title" style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Tasa de engagement %</div>
+          <div style="height:140px;position:relative"><canvas id="anual-${accIdx}-fb-eng"></canvas></div>
+        </div>
+        <div>
+          <div class="section-title" style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Seguidores netos</div>
+          <div style="height:140px;position:relative"><canvas id="anual-${accIdx}-fb-seg"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── INSTAGRAM ── -->
+    <div class="metric-block">
+      <div class="metric-block-header">
+        <div class="metric-block-title">Resumen anual — Instagram</div>
+        <span class="metric-block-badge badge-ig">Instagram</span>
+      </div>
+
+      <div style="overflow-x:auto;margin-bottom:1rem;">
+        <table style="${tableStyle}">
+          <thead><tr><th style="text-align:left;font-size:11px;font-weight:600;color:var(--text-muted);padding:4px 6px">Métrica</th>${headerCells}</tr></thead>
+          <tbody style="${tdStyle}">
+            ${tableRow('Visualizaciones', igViz, fmt)}
+            ${tableRow('% Seguidores', igVsp, v=>v+'%')}
+            ${tableRow('% No seguidores', igVnp, v=>v+'%')}
+            ${tableRow('Cuentas alcanzadas', igAlc, fmt)}
+            ${tableRow('Interacciones', igInt, fmt)}
+            ${tableRow('Total seguidores', igSegT, fmt)}
+            ${tableRow('Nuevos seg.', igNew, fmt)}
+            ${tableRow('Abandonos', igLost, fmt)}
+            ${tableRow('Tasa eng. %', igEr, v=>v+'%')}
+            ${tableRow('Posts', igPost, v=>v)}
+          </tbody>
+        </table>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;">
+        <div>
+          <div class="section-title" style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Visualizaciones</div>
+          <div style="height:140px;position:relative"><canvas id="anual-${accIdx}-ig-viz"></canvas></div>
+        </div>
+        <div>
+          <div class="section-title" style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Cuentas alcanzadas</div>
+          <div style="height:140px;position:relative"><canvas id="anual-${accIdx}-ig-alc"></canvas></div>
+        </div>
+        <div>
+          <div class="section-title" style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Tasa de engagement %</div>
+          <div style="height:140px;position:relative"><canvas id="anual-${accIdx}-ig-eng"></canvas></div>
+        </div>
+        <div>
+          <div class="section-title" style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Nuevos vs Abandonos</div>
+          <div style="height:140px;position:relative"><canvas id="anual-${accIdx}-ig-seg"></canvas></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const miniOpts = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ display:false } },
+    scales:{
+      x:{ ticks:{color:'#898781',font:{size:9},autoSkip:false,maxRotation:0}, grid:{display:false}, border:{display:false} },
+      y:{ ticks:{color:'#898781',font:{size:9}}, grid:{color:'rgba(136,135,128,0.10)'}, border:{display:false} }
+    }
+  };
+
+  setTimeout(()=>{
+    // FB charts
+    new Chart(document.getElementById(`anual-${accIdx}-fb-viz`),{type:'line',data:{labels:MS,datasets:[{data:fbViz.map(v=>v?Number(v):null),borderColor:PALETTE.fb,backgroundColor:PALETTE.fb+'18',borderWidth:2,pointRadius:3,tension:0.35,spanGaps:false}]},options:miniOpts});
+    new Chart(document.getElementById(`anual-${accIdx}-fb-int`),{type:'bar',data:{labels:MS,datasets:[{data:fbInt.map(v=>v?Number(v):null),backgroundColor:PALETTE.purple+'90',borderRadius:3}]},options:miniOpts});
+    new Chart(document.getElementById(`anual-${accIdx}-fb-eng`),{type:'line',data:{labels:MS,datasets:[{data:fbEr.map(v=>v?Number(v):null),borderColor:PALETTE.teal,backgroundColor:PALETTE.teal+'18',borderWidth:2,pointRadius:3,tension:0.35,spanGaps:false}]},options:miniOpts});
+    new Chart(document.getElementById(`anual-${accIdx}-fb-seg`),{type:'bar',data:{labels:MS,datasets:[{data:fbSeg.map(v=>v?Number(v):null),backgroundColor:fbSeg.map(v=>Number(v)>=0?PALETTE.teal+'90':PALETTE.red+'90'),borderRadius:3}]},options:miniOpts});
+    // IG charts
+    new Chart(document.getElementById(`anual-${accIdx}-ig-viz`),{type:'line',data:{labels:MS,datasets:[{data:igViz.map(v=>v?Number(v):null),borderColor:PALETTE.ig,backgroundColor:PALETTE.ig+'18',borderWidth:2,pointRadius:3,tension:0.35,spanGaps:false}]},options:miniOpts});
+    new Chart(document.getElementById(`anual-${accIdx}-ig-alc`),{type:'line',data:{labels:MS,datasets:[{data:igAlc.map(v=>v?Number(v):null),borderColor:PALETTE.ig,backgroundColor:PALETTE.ig+'10',borderWidth:2,pointRadius:3,tension:0.35,spanGaps:false}]},options:miniOpts});
+    new Chart(document.getElementById(`anual-${accIdx}-ig-eng`),{type:'line',data:{labels:MS,datasets:[{data:igEr.map(v=>v?Number(v):null),borderColor:PALETTE.teal,backgroundColor:PALETTE.teal+'18',borderWidth:2,pointRadius:3,tension:0.35,spanGaps:false}]},options:miniOpts});
+    new Chart(document.getElementById(`anual-${accIdx}-ig-seg`),{type:'bar',data:{labels:MS,datasets:[{label:'Nuevos',data:igNew.map(v=>v?Number(v):null),backgroundColor:PALETTE.teal+'90',borderRadius:3},{label:'Abandonos',data:igLost.map(v=>v?Number(v):null),backgroundColor:PALETTE.red+'90',borderRadius:3}]},options:miniOpts});
+  },0);
+}
+
+// ── NAV ─────────────────────────────────────────────────────────
+function switchNet(accIdx, net) {
+  currentNet[accIdx]=net;
+  ['facebook','instagram','pauta','anual'].forEach(n=>{
+    const tab=document.getElementById('nettab-'+accIdx+'-'+n);
+    if(!tab) return;
+    if(n==='anual') tab.className='net-tab'+(n===net?' anual-active':'');
+    else if(n==='pauta') tab.className='net-tab'+(n===net?' pauta-active':'');
+    else tab.className='net-tab'+(n===net?(n==='facebook'?' fb-active':' ig-active'):'');
+    const p=document.getElementById('netpanel-'+accIdx+'-'+n);
+    if(p) p.classList.toggle('active',n===net);
+  });
+  if(net==='anual') renderAnual(accIdx);
+  else if(net==='pauta') renderPauta(accIdx);
+  else renderNetPanel(accIdx, net);
+}
+function switchAccount(idx) {
+  currentAccount=idx;
+  document.querySelectorAll('.account-tab').forEach((t,i)=>t.classList.toggle('active',i===idx));
+  document.querySelectorAll('.account-panel').forEach((p,i)=>p.classList.toggle('active',i===idx));
+  const net = currentNet[idx];
+  if(net==='anual') renderAnual(idx); else if(net==='pauta') renderPauta(idx); else renderNetPanel(idx, net);
+}
+function selectMonth(m) {
+  currentMonth=m;
+  document.getElementById('period-label').textContent=MONTHS[m]+' '+new Date().getFullYear();
+  renderNetPanel(currentAccount, currentNet[currentAccount]);
+}
+function saveField(accIdx, net, month, field, value) {
+  state[accIdx][net].months[month][field]=value;
+  saveStateAndSync(accIdx, net, month);
+  renderNetPanel(accIdx, net);
+}
+
+
+function descargarPDF() {
+  const cuenta = document.querySelectorAll('.account-tab')[currentAccount]?.textContent?.trim() || 'cuenta';
+  const mes = document.getElementById('period-label')?.textContent || '';
+  const elemento = document.getElementById('account-panels');
+  const opt = {
+    margin: [10, 10, 10, 10],
+    filename: `reporte_${cuenta}_${mes.replace(' ','_')}.pdf`,
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+  };
+  const btn = document.querySelector('.btn-pdf');
+  btn.textContent = '⏳ Generando PDF...';
+  btn.disabled = true;
+  html2pdf().set(opt).from(elemento).save().then(() => {
+    btn.textContent = '📄 Descargar PDF';
+    btn.disabled = false;
+  });
+}
+
+function init() {
+  // CSS extra para tab anual
+  const style=document.createElement('style');
+  style.textContent=`.net-tab.anual-active{background:#f5f0ff;color:#6d28d9;border-color:#c4b5fd;} .net-tab.pauta-active{background:#fef9c3;color:#854d0e;border-color:#fde047;}`;
+  document.head.appendChild(style);
+
+  const tabsEl=document.getElementById('account-tabs');
+  const panelsEl=document.getElementById('account-panels');
+  ACCOUNTS.forEach((name,i)=>{
+    const btn=document.createElement('button');
+    btn.className='account-tab'+(i===0?' active':'');
+    btn.textContent=name;
+    btn.onclick=()=>switchAccount(i);
+    tabsEl.appendChild(btn);
+    const panel=document.createElement('div');
+    panel.className='account-panel'+(i===0?' active':'');
+    panel.id='acpanel-'+i;
+    panel.innerHTML=`
+      <div class="net-tabs">
+        <button class="net-tab fb-active" id="nettab-${i}-facebook" onclick="switchNet(${i},'facebook')"><span class="dot" style="background:#1877f2"></span> Facebook</button>
+        <button class="net-tab" id="nettab-${i}-instagram" onclick="switchNet(${i},'instagram')"><span class="dot" style="background:#c13584"></span> Instagram</button>
+        <button class="net-tab" id="nettab-${i}-pauta" onclick="switchNet(${i},'pauta')">💰 Pauta</button>
+        <button class="net-tab" id="nettab-${i}-anual" onclick="switchNet(${i},'anual')">📅 Resumen anual</button>
+      </div>
+      <div class="net-panel active" id="netpanel-${i}-facebook"></div>
+      <div class="net-panel" id="netpanel-${i}-instagram"></div>
+      <div class="net-panel" id="netpanel-${i}-pauta"></div>
+      <div class="net-panel" id="netpanel-${i}-anual"></div>`;
+    panelsEl.appendChild(panel);
+  });
+  document.getElementById('period-label').textContent=MONTHS[currentMonth]+' '+new Date().getFullYear();
+
+  // Mostrar indicador de carga DESPUÉS de crear los paneles
+  // Cargar desde Supabase con timeout de 5 segundos
+  const timeout = setTimeout(() => {
+    renderNetPanel(0,'facebook');
+  }, 5000);
+
+  loadFromSupabase().then(cloudState => {
+    clearTimeout(timeout);
+    if(cloudState) {
+      state = cloudState;
+      saveState();
+    }
+    renderNetPanel(0,'facebook');
+  }).catch(() => {
+    clearTimeout(timeout);
+    renderNetPanel(0,'facebook');
+  });
+}
+init();
+</script>
+</body>
+</html>
