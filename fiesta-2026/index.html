@@ -8,18 +8,21 @@
   <meta property="og:title" content="Fiesta de Fin de Año 2026 – Grupo Agroenergía">
   <meta property="og:description" content="Sábado 12 de diciembre, 22:00 h – Celebrity Eventos, Toay. Confirmá tu asistencia hasta el 27/11.">
   <meta property="og:type" content="website">
-  <!-- og:image se agrega cuando esté la gráfica (1200 × 630 px) -->
+  <meta property="og:image" content="https://marketinggrupoagroenergia-max.github.io/dashboard-social-media/fiesta-2026/image.jpg">
+  <meta property="og:url" content="https://marketinggrupoagroenergia-max.github.io/dashboard-social-media/fiesta-2026/">
+  <meta name="theme-color" content="#050B1F">
   <style>
-    /* ===== COLORES (se reemplazan cuando estén las gráficas) ===== */
+    /* ===== COLORES ===== */
     :root {
-      --fondo: #f4f4f2;
-      --tarjeta: #ffffff;
-      --texto: #1d1d1b;
-      --suave: #6b6b66;
-      --principal: #1d1d1b;
-      --boton: #1d1d1b;
+      color-scheme: dark;
+      --fondo: #050B1F;
+      --tarjeta: #0D1A3D;
+      --texto: #ffffff;
+      --suave: #A9BCE6;
+      --principal: #ffffff;
+      --boton: #3D8BFF;
       --boton-texto: #ffffff;
-      --borde: #d9d9d4;
+      --borde: #2A3F73;
     }
     * { box-sizing: border-box; }
     body {
@@ -29,11 +32,6 @@
     }
     .contenedor { max-width: 480px; margin: 0 auto; padding: 16px 16px 40px; }
     .grafica img { width: 100%; display: block; border-radius: 12px; }
-    .grafica-vacia {
-      aspect-ratio: 4 / 5; border: 2px dashed var(--borde); border-radius: 12px;
-      display: flex; align-items: center; justify-content: center; text-align: center;
-      color: var(--suave); padding: 24px; font-size: 14px;
-    }
     .evento {
       background: var(--tarjeta); border-radius: 12px; padding: 16px; margin-top: 16px;
       display: grid; gap: 10px;
@@ -54,7 +52,7 @@
     label.titulo { display: block; font-weight: 600; margin: 18px 0 8px; }
     input[type=text], select {
       width: 100%; padding: 12px; font-size: 16px; border: 1px solid var(--borde);
-      border-radius: 8px; background: #fff; color: var(--texto);
+      border-radius: 8px; background: #08122E; color: var(--texto);
     }
     .opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .opciones label {
@@ -69,7 +67,7 @@
       border: 0; border-radius: 8px; background: var(--boton); color: var(--boton-texto); cursor: pointer;
     }
     button:disabled { opacity: .6; cursor: default; }
-    .error { color: #b3261e; font-size: 14px; margin-top: 12px; min-height: 1em; }
+    .error { color: #FF8A80; font-size: 14px; margin-top: 12px; min-height: 1em; }
     .gracias { display: none; text-align: center; }
     .gracias h2 { margin-bottom: 8px; }
     .pie { text-align: center; color: var(--suave); font-size: 12px; margin-top: 24px; }
@@ -79,8 +77,8 @@
   <div class="contenedor">
 
     <!-- ===== TARJETA GRÁFICA ===== -->
-    <div class="grafica" id="grafica">
-      <div class="grafica-vacia">Acá va la tarjeta de invitación<br>(1080 × 1350 px)</div>
+    <div class="grafica">
+      <img src="image.jpg" width="1081" height="1348" alt="Fiesta de fin de año. Chau 2026. Lo vivimos juntos, ¡lo festejamos juntos! Grupo Agroenergía">
     </div>
 
     <!-- ===== DATOS DEL EVENTO ===== -->
@@ -134,13 +132,6 @@
   <script>
     // Dirección del script que guarda en la planilla
     const ENDPOINT = 'https://script.google.com/macros/s/AKfycbyjlrJgyCej1O6SwqNcmFYHKYi33ihnbrCd9MXvi_XooHy9vKl4ohcW7Xe8iStgmIcHnw/exec';
-    // Link de la imagen de la tarjeta. Vacío = se ve el recuadro de muestra
-    const IMAGEN_TARJETA = '';
-
-    if (IMAGEN_TARJETA) {
-      document.getElementById('grafica').innerHTML =
-        '<img src="' + IMAGEN_TARJETA + '" alt="Invitación Fiesta de Fin de Año Grupo Agroenergía">';
-    }
 
     const radios = document.querySelectorAll('input[name=asiste]');
     const restriccion = document.getElementById('restriccion');
