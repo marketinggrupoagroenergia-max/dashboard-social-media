@@ -61,7 +61,7 @@
     }
     .opciones input { position: absolute; opacity: 0; pointer-events: none; }
     .opciones label.activa { background: var(--boton); border-color: var(--boton); color: var(--boton-texto); }
-    #bloqueDetalle { display: none; }
+    #bloqueDetalle, #bloqueSector { display: none; }
     button {
       width: 100%; margin-top: 24px; padding: 14px; font-size: 16px; font-weight: 700;
       border: 0; border-radius: 8px; background: var(--boton); color: var(--boton-texto); cursor: pointer;
@@ -103,6 +103,31 @@
         <label><input type="radio" name="asiste" value="No"><span>No puedo</span></label>
       </div>
 
+      <label class="titulo">¿Sos empleado/a de Grupo Agroenergía?</label>
+      <div class="opciones">
+        <label><input type="radio" name="empleado" value="Sí"><span>Sí</span></label>
+        <label><input type="radio" name="empleado" value="No"><span>No</span></label>
+      </div>
+
+      <div id="bloqueSector">
+        <label class="titulo" for="sector">¿En qué estación o sector trabajás?</label>
+        <select id="sector">
+          <option value="">Elegí una opción</option>
+          <option value="Puma Energy">Puma Energy</option>
+          <option value="Axion Energy">Axion Energy</option>
+          <option value="Shell">Shell</option>
+          <option value="Barón Agroenergía">Barón Agroenergía</option>
+          <option value="Caleufú Agroenergía">Caleufú Agroenergía</option>
+          <option value="Trenel Agroenergía">Trenel Agroenergía</option>
+          <option value="Logística">Logística</option>
+          <option value="Administración">Administración</option>
+          <option value="Havanna">Havanna</option>
+          <option value="Spot">Spot</option>
+          <option value="Shell Select">Shell Select</option>
+          <option value="Mantenimiento">Mantenimiento</option>
+        </select>
+      </div>
+
       <label class="titulo" for="restriccion">¿Tenés alguna restricción alimentaria?</label>
       <select id="restriccion">
         <option value="Ninguna">Ninguna</option>
@@ -140,6 +165,14 @@
     radios.forEach(r => r.addEventListener('change', () => {
       radios.forEach(x => x.parentElement.classList.toggle('activa', x.checked));
     }));
+    const radiosEmp = document.querySelectorAll('input[name=empleado]');
+    const bloqueSector = document.getElementById('bloqueSector');
+    const sector = document.getElementById('sector');
+    radiosEmp.forEach(r => r.addEventListener('change', () => {
+      radiosEmp.forEach(x => x.parentElement.classList.toggle('activa', x.checked));
+      bloqueSector.style.display = document.querySelector('input[name=empleado]:checked').value === 'Sí' ? 'block' : 'none';
+    }));
+
     restriccion.addEventListener('change', () => {
       bloqueDetalle.style.display = restriccion.value === 'Otra' ? 'block' : 'none';
     });
@@ -168,11 +201,14 @@
       error.textContent = '';
       if (!nombre) { error.textContent = 'Escribí tu nombre y apellido.'; return; }
       if (!marcado) { error.textContent = 'Indicá si vas a asistir.'; return; }
+      const emp = document.querySelector('input[name=empleado]:checked');
+      if (!emp) { error.textContent = 'Indicá si sos empleado/a.'; return; }
+      if (emp.value === 'Sí' && !sector.value) { error.textContent = 'Elegí tu estación o sector.'; return; }
       if (marcado.value === 'Sí' && restriccion.value === 'Otra' && !detalle) {
         error.textContent = 'Contanos cuál es tu restricción.'; return;
       }
 
-      const datos = { nombre: nombre, asiste: marcado.value, restriccion: restriccion.value, detalle: detalle };
+      const datos = { nombre: nombre, asiste: marcado.value, restriccion: restriccion.value, detalle: detalle, empleado: emp.value, sector: emp.value === 'Sí' ? sector.value : '' };
 
       boton.disabled = true;
       boton.textContent = 'Enviando…';
